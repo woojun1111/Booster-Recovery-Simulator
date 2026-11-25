@@ -1,19 +1,23 @@
 import * as T from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
-export function scene3d(host) {
+import {addBarge, daylight, DECK_HEIGHT} from "./bargeScene.js";
+export async function scene3d(host) {
   const scene=new T.Scene();
-  scene.background=new T.Color(0x101e2c);
-  scene.fog=new T.FogExp2(0x101e2c,.023);
+  scene.background=new T.Color(0xb6cbda);
+  scene.fog=new T.FogExp2(0xb6cbda,.009);
   const renderer=new T.WebGLRenderer({antialias:true});
   host.appendChild(renderer.domElement);
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   const camera=new T.PerspectiveCamera(39,1,.1,200);
-  camera.position.set(12,5,17);
+  camera.position.set(18,13,22);
   const controls=new OrbitControls(camera,renderer.domElement);
+  controls.target.set(0,3,0);
+  controls.maxPolarAngle=Math.PI*.487;
+  controls.minDistance=5;
+  controls.maxDistance=75;
   controls.enablePan=false;
-  scene.add(new T.HemisphereLight(0xd4efff,0x737c84,2));
-  const light=new T.DirectionalLight(0xffe5be,3);
-  light.position.set(-6,12,8);scene.add(light);
+  daylight(scene,renderer);
+  await addBarge(scene,renderer);
   const body=new T.Group();scene.add(body);
   const mesh=(geo,color,parent=body)=>{
     const m=new T.Mesh(geo,new T.MeshStandardMaterial({color,metalness:.45,roughness:.43}));
@@ -40,15 +44,14 @@ export function scene3d(host) {
     const a=new T.ArrowHelper(new T.Vector3(0,1,0),new T.Vector3(),1,color);
     scene.add(a);return a;
   });
-  const grid=new T.GridHelper(120,80,0x608294,0x293f4c);scene.add(grid);
+  body.traverse(part=>{if(part.isMesh && part!==flame && !gas.includes(part)) part.castShadow=true;});
   new ResizeObserver(()=>{
     const w=host.clientWidth,h=host.clientHeight;
     camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
   }).observe(host);
   return (s,showVectors,manual,time)=>{
     const [throttle,gimbal,fin,rcs]=s.action;
-    body.position.set(manual?0:s.obs[0]/90,manual?0:s.obs[1]/300,0);
-    grid.position.y=-4.3;
+    body.position.set(manual?0:s.obs[0]/90,DECK_HEIGHT+4.21+(manual?0:s.obs[1]/300),0);
     body.rotation.z=manual?0:s.obs[4];
     nozzle.rotation.z=gimbal*Math.PI/12;
     flame.visible=throttle>=-.2;flame.scale.y=.65+.35*throttle;

@@ -42,3 +42,7 @@
 - artemycz · [Falcon 9 SpaceX rocket](https://sketchfab.com/3d-models/falcon-9-spacex-rocket-58784d6b55ad47d2985f353459759f06)
 - Forest Katsch · [SpaceX Falcon 9 and Dragon 2](https://sketchfab.com/3d-models/spacex-falcon-9-and-dragon-2-f709fc945bb2413faf2878aa613cde3d)
 - yakudami · [SpaceX drone barge](https://sketchfab.com/3d-models/spacex-drone-barge-9ed1cd7b420c49b19c849dc011fbcc13)
+
+## 뷰포트용 단일 바지선
+
+`/models/barge_aesthetic.glb`는 yakudami의 원본에서 `Barge1`만 추출한 CC-BY-4.0 파생 모델이다. 원본 루트의 회전을 유지하고 XZ 중심을 정렬했다. 변환 후 경계는 X ±26, Z ±48, Y −1.79291~18.50709이다. 뷰포트에서는 균일 배율 0.24와 수면 Y=0을 사용하므로 선저가 약 0.43 장면 단위 잠긴다. 갑판 색상 PNG는 원본과 동일한 1024×1024이며 알파가 255 미만인 픽셀 3,789개를 보존했다. 재질은 단면 금속성·거칠기 PBR과 알파 마스크를 사용한다.

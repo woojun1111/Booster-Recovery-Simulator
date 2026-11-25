@@ -6,7 +6,7 @@ async function start(){
   const replay=new Replay();
   const sample=await fetch('./sample.json');
   replay.load(await sample.json());
-  const draw=scene3d(el('scene')), inputs=createInputs();
+  const draw=await scene3d(el('scene')), inputs=createInputs();
   let predict, previous=performance.now(), pending=false, lastSample=null;
   loadModel().then(fn=>{
     predict=fn;el('modelOption').disabled=false;el('modelStatus').textContent='ONNX 기록 분석 가능';
