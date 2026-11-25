@@ -34,7 +34,7 @@ export async function addBarge(scene, renderer) {
   const {scene: barge} = await new GLTFLoader().loadAsync('./models/barge_aesthetic.glb');
   const prepared = new Set();
   barge.traverse(mesh => {
-    if (!mesh.isMesh) return;
+    if (!(mesh instanceof THREE.Mesh)) return;
     if (!mesh.geometry.getAttribute('normal')) mesh.geometry.computeVertexNormals();
     mesh.castShadow = mesh.receiveShadow = true;
     for (const material of [].concat(mesh.material)) {
