@@ -1,0 +1,9 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Booster Recovery Simulator</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101820;color:#edf4f7;font:16px system-ui,sans-serif}header,footer{padding:14px 3vw;background:#142530}h1{font-size:clamp(20px,3vw,34px);margin:0}main{display:grid;grid-template-columns:1fr minmax(285px,27vw);min-height:76vh}#scene{position:relative;min-width:0;min-height:360px}canvas{width:100%;height:100%;position:absolute}aside{background:#182a36;padding:20px;display:grid;gap:12px;align-content:start}select,button{padding:8px;background:#263c49;color:white;border:1px solid #557382;border-radius:4px}input{accent-color:#75dab6}label{display:block}label input[type=range]{width:100%}output,pre{font:14px/1.65 monospace;color:#b9eadb}footer{display:flex;gap:12px;align-items:center;flex-wrap:wrap}#timeline{flex:1}h2{font-size:16px;margin:0}hr{width:100%;border:0;border-top:1px solid #49606d}@media(max-width:700px){main{display:block}#scene{height:52vh}aside{padding:14px}}
+</style><header><h1>Booster Recovery Simulator</h1></header><main><section id="scene"></section><aside>
+<label>실행 모드 <select id="mode"><option value="replay">비행 기록 재생</option><option value="manual">수동 구동기 검사</option><option id="modelOption" value="model" disabled>ONNX 기록 분석</option></select></label>
+<span id="modelStatus" role="status">모델 확인 중</span><hr><h2 id="phase"></h2><pre id="telemetry"></pre><div id="inputs"></div>
+<label><input id="vectors" type="checkbox" checked> 기록 벡터 · 추력 / 핀 / 항력</label>
+<label>비행 기록 JSON <input id="file" type="file" accept=".json"></label><output id="notice"></output></aside></main>
+<footer><button id="play">재생</button><input id="timeline" aria-label="기록 시각" type="range" min="0" value="0"><output id="clock"></output></footer><script type="module" src="/src/main.js"></script></html>
