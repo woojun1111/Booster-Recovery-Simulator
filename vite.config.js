@@ -1,2 +1,2 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ base: './', build: { outDir: 'out', emptyOutDir: true } });
+export default defineConfig({ base: '/Booster-Recovery-Simulator/' });
