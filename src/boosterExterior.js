@@ -22,23 +22,26 @@ function finishPart(mesh, source) {
     mat.metalness = .12;
     mat.roughness = .42;
     const points = mesh.geometry.attributes.position;
-    const soot = new Float32Array(points.count);
+    const sootHeight = new Float32Array(points.count);
     const v = new T.Vector3();
     for (let i = 0; i < points.count; i++) {
       v.fromBufferAttribute(points, i).applyMatrix4(mesh.matrixWorld);
       const azimuth = Math.atan2(v.z, v.x);
-      const edge = 11 + 2 * Math.sin(5 * azimuth) + Math.cos(9 * azimuth);
-      soot[i] = 1 - T.MathUtils.smoothstep(v.y, 1, edge);
+      const streak = 1.3 * Math.sin(5 * azimuth) + .55 * Math.cos(9 * azimuth);
+      sootHeight[i] = v.y + streak;
     }
-    mesh.geometry.setAttribute('sootAmount', new T.BufferAttribute(soot, 1));
+    mesh.geometry.setAttribute('sootHeight', new T.BufferAttribute(sootHeight, 1));
     mat.onBeforeCompile = shader => {
-      shader.vertexShader = 'attribute float sootAmount; varying float vSoot;\n' +
-        shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vSoot = sootAmount;');
-      shader.fragmentShader = 'varying float vSoot;\n' + shader.fragmentShader
-        .replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb *= mix(vec3(1.),vec3(.36,.31,.28),vSoot);')
-        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor += .24*vSoot;');
+      shader.vertexShader = 'attribute float sootHeight; varying float vSootHeight;\n' +
+        shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vSootHeight = sootHeight;');
+      shader.fragmentShader = 'varying float vSootHeight;\n' + shader.fragmentShader
+        .replace('#include <color_fragment>', '#include <color_fragment>\n float soot = 1.0 - smoothstep(1.0, 15.0, vSootHeight); diffuseColor.rgb *= mix(vec3(1.),vec3(.48,.44,.41),soot);')
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor += .20*soot;');
     };
-  } else if (/^Interstage_F9|Grid_Fin/i.test(mesh.name + ' ' + source.name)) {
+  } else if (source.name === 'F9_Grid_Fin') {
+    mat.color.setHex(0x777779); mat.metalness = .76; mat.roughness = .34;
+    mat.envMapIntensity = 1.32;
+  } else if (/^Interstage_F9/i.test(mesh.name)) {
     mat.color.setHex(0x686769); mat.metalness = .74; mat.roughness = .39;
   } else if (/Hydraulic/i.test(mesh.name)) {
     mat.color.setHex(0xc0cad0); mat.metalness = .91; mat.roughness = .23;
