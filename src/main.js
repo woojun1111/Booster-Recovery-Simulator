@@ -1,3 +1,4 @@
+import {createAttitudeDemo} from './attitudeDemo.js';
 import {Replay} from './replayController.js';
 import {scene3d} from './scene3d.js';
 import {el,createInputs,hud} from './hud.js';
@@ -7,16 +8,30 @@ async function start(){
   const sample=await fetch('./sample.json');
   replay.load(await sample.json());
   const draw=await scene3d(el('scene')), inputs=createInputs();
+  const pd = createAttitudeDemo(el('pdCanvas'), el('telemetry'));
+  const resetPD = () => pd.reset(el('pdPreset').value);
+  el('pdPreset').onchange = resetPD;
+  el('pdReset').onclick = resetPD;
   let predict, previous=performance.now(), pending=false, lastSample=null;
   loadModel().then(fn=>{
     predict=fn;el('modelOption').disabled=false;el('modelStatus').textContent='ONNX 기록 분석 가능';
   }).catch(e=>el('modelStatus').textContent='ONNX 비활성 · '+e.message);
   function setup(){
     const manual=el('mode').value==='manual';
+    const attitudeDemo = el('mode').value === 'pd';
+    el('pdControls').hidden = el('pdCanvas').hidden = !attitudeDemo;
+    el('scene').hidden = attitudeDemo;
+    el('modelStatus').hidden = attitudeDemo;
+    el('vectors').disabled = attitudeDemo;
+    if (attitudeDemo) {
+      resetPD();
+      el('phase').textContent = '고정축 자세 응답';
+      el('clock').textContent = '';
+    }
     replay.running=false;replay.remainder=0;lastSample=null;
     el('notice').textContent='';
     inputs.forEach(input=>input.disabled=!manual);
-    el('play').disabled=manual;el('timeline').disabled=manual;
+    el('play').disabled=manual || attitudeDemo;el('timeline').disabled=manual || attitudeDemo;
     el('timeline').max=replay.last;
   }
   setup();el('mode').onchange=setup;
@@ -35,7 +50,14 @@ async function start(){
     if(k>=0){const input=inputs[Math.floor(k/2)];k%2?input.stepUp():input.stepDown();}
   });
   function animate(now){
-    replay.advance(Math.min(.15,(now-previous)/1000));previous=now;
+    const delta = Math.min(.15,(now-previous)/1000);
+    previous=now;
+    if (el('mode').value === 'pd') {
+      pd.draw(delta);
+      requestAnimationFrame(animate);
+      return;
+    }
+    replay.advance(delta);
     const s=replay.read(), manual=el('mode').value==='manual';
     if(manual){s.action=inputs.slice(0,4).map(input=>Number(input.value));s.obs[9]=Number(inputs[4].value);}
     if(el('mode').value==='model'&&predict&&!pending&&lastSample!==replay.index){
