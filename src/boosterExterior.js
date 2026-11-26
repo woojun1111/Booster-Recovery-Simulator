@@ -14,14 +14,93 @@ function moveToPivot(part, pivot) {
   pivot.add(part);
 }
 
+// Keep source decals and UVs. Soot height is measured in the unposed asset's metres.
+function finishPart(mesh, source) {
+  const mat = source.clone();
+  mat.envMapIntensity = 1.15;
+  if (source.name === 'F9_First_Stage') {
+    mat.metalness = .12;
+    mat.roughness = .42;
+    const points = mesh.geometry.attributes.position;
+    const soot = new Float32Array(points.count);
+    const v = new T.Vector3();
+    for (let i = 0; i < points.count; i++) {
+      v.fromBufferAttribute(points, i).applyMatrix4(mesh.matrixWorld);
+      const azimuth = Math.atan2(v.z, v.x);
+      const edge = 11 + 2 * Math.sin(5 * azimuth) + Math.cos(9 * azimuth);
+      soot[i] = 1 - T.MathUtils.smoothstep(v.y, 1, edge);
+    }
+    mesh.geometry.setAttribute('sootAmount', new T.BufferAttribute(soot, 1));
+    mat.onBeforeCompile = shader => {
+      shader.vertexShader = 'attribute float sootAmount; varying float vSoot;\n' +
+        shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vSoot = sootAmount;');
+      shader.fragmentShader = 'varying float vSoot;\n' + shader.fragmentShader
+        .replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb *= mix(vec3(1.),vec3(.36,.31,.28),vSoot);')
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor += .24*vSoot;');
+    };
+  } else if (/^Interstage_F9|Grid_Fin/i.test(mesh.name + ' ' + source.name)) {
+    mat.color.setHex(0x686769); mat.metalness = .74; mat.roughness = .39;
+  } else if (/Hydraulic/i.test(mesh.name)) {
+    mat.color.setHex(0xc0cad0); mat.metalness = .91; mat.roughness = .23;
+  } else if (/Merlin_Engine/.test(source.name)) {
+    mat.color.setHex(0xa4988d); mat.metalness = .78; mat.roughness = .36;
+  } else if (/Landing_Leg/.test(source.name)) {
+    mat.metalness = .22; mat.roughness = .55;
+  }
+  return mat;
+}
+
+// A shared radial sprite softens the plume boundaries from every camera angle.
+export function exhaust(nozzle, body) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  const fade = ctx.createRadialGradient(48,48,0,48,48,48);
+  for (const [stop, alpha] of [[0,1],[.22,.9],[.58,.32],[1,0]]) {
+    fade.addColorStop(stop, 'rgba(255,255,255,' + alpha + ')');
+  }
+  ctx.fillStyle = fade; ctx.fillRect(0,0,96,96);
+  const map = new T.CanvasTexture(canvas);
+  function sprite(parent, color, blending) {
+    const material = new T.SpriteMaterial({map,color,blending,transparent:true,depthWrite:false});
+    const sprite = new T.Sprite(material);
+    parent.add(sprite);
+    return sprite;
+  }
+  const trail = Array.from({length:22}, (_,i) =>
+    sprite(nozzle,i < 8 ? 0xd9faff : 0xff9760,T.AdditiveBlending));
+  const jets = Array.from({length:18}, () => sprite(body,0xe1f1fa,T.NormalBlending));
+  return (throttle,rcs,height,time,clearance) => {
+    const power = .4 + .6 * T.MathUtils.clamp((throttle+.2)/1.2,0,1);
+    const length = Math.min(9 * power, height + clearance);
+    trail.forEach((p,i) => {
+      p.visible = throttle >= -.2;
+      const u = i/(trail.length-1);
+      const diameter = (.48 + u*.92 + u*u*1.8*(1-T.MathUtils.smoothstep(height,0,7)))
+        * (.96 + .04*Math.sin(time*32-i));
+      p.position.set(0,-1.3-u*length,0);
+      p.scale.setScalar(diameter);
+      p.material.opacity = (1-u*u)*(.32+.38*power);
+    });
+    jets.forEach((p,i) => {
+      p.visible = Math.abs(rcs) > .03;
+      const u = (i/jets.length + time*1.4)%1;
+      p.position.set(Math.sign(rcs)*(1.92+u*4*Math.abs(rcs)),
+        42.15+u*.23*Math.sin(i*7), u*.22*Math.cos(i*9));
+      p.scale.setScalar(.12+.79*u);
+      p.material.opacity = .45*(1-u)*Math.abs(rcs);
+    });
+  };
+}
+
 export async function loadBooster() {
   const {scene: model} = await new GLTFLoader().loadAsync('./models/falcon9_booster_aesthetic.glb');
+  model.updateMatrixWorld(true);
   model.traverse(part => {
     if (!(part instanceof T.Mesh)) return;
     part.castShadow = part.receiveShadow = true;
-    for (const mat of Array.isArray(part.material) ? part.material : [part.material]) {
-      mat.envMapIntensity = 1.2;
-    }
+    part.material = Array.isArray(part.material)
+      ? part.material.map(mat => finishPart(part, mat)) : finishPart(part, part.material);
   });
   const node = name => model.getObjectByName(T.PropertyBinding.sanitizeNodeName(name));
   const pivotAt = position => {
