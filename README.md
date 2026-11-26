@@ -17,3 +17,7 @@ Node 22 이상에서 `npm ci`, `npm run dev`를 실행한다. 배포 빌드는 `
 ## 재현
 
 `rl-pipeline/env/booster_recovery_env.py`가 기본 기록과 기준 보간값을 정의한다. Python 3.10 이상에서 이 파일을 실행하면 `public/sample.json`이 생성된다. `python rl-pipeline/verify_parity.py`는 Node에서 같은 기록을 해석해 0 및 8.5 m/s 측풍 채널에서 관측·입력·시간·단계와 표시 벡터를 대조한다. 이 검사는 기록 디코더를 검증한다. 모델 추론으로 다음 비행 상태를 계산하는 폐루프 동역학은 구현 범위에서 제외했다.
+
+## 뷰포트의 Falcon 9 모델
+
+`public/models/falcon9_booster_aesthetic.glb`는 Stanley Creative의 모델에서 1단을 추출한 에셋이다. 2단과 페어링을 제거하고 핀 패널을 네 개로 분리했다. 보정 후 접힌 자세의 높이는 48.707 m이며, 원점은 최하단의 수평 중심이다. 바지선과 부스터, 기록의 X·Y 이동량에는 같은 표시 축척(0.24)을 적용한다. 기록 재생 시 하강 속도의 부호로 핀 전개를 정하고, 고도 40~6 m 사이에서 착륙 다리를 펼친다. 이 전개 구간과 관절 각도는 화면 표현을 위해 정한 값이다. [원본 Falcon 9 - SpaceX](https://sketchfab.com/3d-models/falcon-9-spacex-394f7cf52d124bbd9db69f24d1ff2f08) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
