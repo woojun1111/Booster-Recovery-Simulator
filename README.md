@@ -6,7 +6,9 @@ Three.js 기반 수동 구동기 검사 및 합성 비행 기록 뷰어. 기본 
 
 ## 실행
 
-Node 22 이상에서 `npm ci`, `npm run dev`를 실행한다. 배포 빌드는 `npm run build`이며 출력은 `out/`이다.
+Node 22 이상에서 `npm ci`, `npm run dev`를 실행한다. 배포 빌드는 `npm run build`이며 출력은 `dist/`이다.
+
+GitHub Pages의 배포 소스를 **Settings → Pages → Source → GitHub Actions**로 설정하면 `main`에 푸시될 때마다 자동 배포된다. [GitHub Pages 시뮬레이터](https://woojun1111.github.io/Booster-Recovery-Simulator/)
 
 ## 모드와 단위
 
