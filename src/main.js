@@ -1,8 +1,27 @@
 import {createAttitudeDemo} from './attitudeDemo.js';
+import {BOOSTER_SPECS,createInitialLandingState,stepLandingDynamics} from './planarLandingEnv.js';
+import {computeGncActuators} from './planarController.js';
 import {Replay} from './replayController.js';
 import {scene3d} from './scene3d.js';
-import {el,createInputs,hud} from './hud.js';
+import {el,createInputs,createLandingPresets,hud,showLandingOutcome} from './hud.js';
 import {loadModel} from './onnxController.js';
+
+const noRecordedVectors = [[0, 0], [0, 0], [0, 0]];
+
+function landingFrame(state) {
+  const {t, x, y, vx, vy, theta, omega, rp1, n2, q, windX, throttle, gimbal, finDeflection, rcs, legDeploy} = state;
+  // The replay renderer treats throttle commands below -0.2 as engine off.
+  const throttleAction = throttle > 0 ? Math.max(-.2, 2 * throttle - 1) : -1;
+  return {
+    t,
+    obs: [x, y, vx, vy, theta, omega, rp1, n2, q, windX],
+    action: [throttleAction, gimbal / BOOSTER_SPECS.maxGimbalRad, finDeflection / BOOSTER_SPECS.maxFinRad, rcs],
+    vectors: noRecordedVectors,
+    throttle,
+    legDeploy,
+  };
+}
+
 async function start(){
   const replay=new Replay();
   const sample=await fetch('./sample.json');
@@ -12,6 +31,14 @@ async function start(){
   const resetPD = () => pd.reset(el('pdPreset').value);
   el('pdPreset').onchange = resetPD;
   el('pdReset').onclick = resetPD;
+  const landingPreset = createLandingPresets();
+  let simState;
+  const resetLanding = () => {
+    simState = createInitialLandingState(landingPreset.value);
+    el('notice').textContent = '';
+  };
+  landingPreset.onchange = resetLanding;
+  el('landingReset').onclick = resetLanding;
   let predict, previous=performance.now(), pending=false, lastSample=null;
   loadModel().then(fn=>{
     predict=fn;el('modelOption').disabled=false;el('modelStatus').textContent='ONNX 기록 분석 가능';
@@ -19,19 +46,22 @@ async function start(){
   function setup(){
     const manual=el('mode').value==='manual';
     const attitudeDemo = el('mode').value === 'pd';
+    const landing = el('mode').value === 'landing';
     el('pdControls').hidden = el('pdCanvas').hidden = !attitudeDemo;
+    el('landingControls').hidden = !landing;
     el('scene').hidden = attitudeDemo;
-    el('modelStatus').hidden = attitudeDemo;
-    el('vectors').disabled = attitudeDemo;
+    el('modelStatus').hidden = attitudeDemo || landing;
+    el('vectors').disabled = attitudeDemo || landing;
     if (attitudeDemo) {
       resetPD();
       el('phase').textContent = '고정축 자세 응답';
       el('clock').textContent = '';
     }
+    if (landing) resetLanding();
     replay.running=false;replay.remainder=0;lastSample=null;
     el('notice').textContent='';
     inputs.forEach(input=>input.disabled=!manual);
-    el('play').disabled=manual || attitudeDemo;el('timeline').disabled=manual || attitudeDemo;
+    el('play').disabled=manual || attitudeDemo || landing;el('timeline').disabled=manual || attitudeDemo || landing;
     el('timeline').max=replay.last;
   }
   setup();el('mode').onchange=setup;
@@ -54,6 +84,16 @@ async function start(){
     previous=now;
     if (el('mode').value === 'pd') {
       pd.draw(delta);
+      requestAnimationFrame(animate);
+      return;
+    }
+    if (el('mode').value === 'landing') {
+      const act = computeGncActuators(simState);
+      simState = stepLandingDynamics(simState, act, delta);
+      const frame = landingFrame(simState);
+      hud(frame, false);
+      draw(frame, false, false, now / 1000);
+      if (simState.landed) showLandingOutcome(simState.outcome);
       requestAnimationFrame(animate);
       return;
     }
