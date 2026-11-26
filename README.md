@@ -2,6 +2,8 @@
 
 Three.js 기반 수동 구동기 검사 및 합성 비행 기록 뷰어. 기본 화면의 30초 시퀀스는 손으로 작성한 키프레임이다.
 
+[웹 시뮬레이터 열기](https://booster-recovery-simulator-woojun.aa01066365388.chatgpt.site) · 소유자 계정으로 접속한 뒤 **재생**을 누르면 기본 기록을 볼 수 있다.
+
 ## 실행
 
 Node 22 이상에서 `npm ci`, `npm run dev`를 실행한다. 배포 빌드는 `npm run build`이며 출력은 `out/`이다.
